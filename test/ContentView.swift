@@ -5,8 +5,9 @@ struct CalendarView: View {
     @State private var isDragging = false
     @State private var dragStartDate: Date?
     @State private var currentMonth = Date()
-    @State private var showingMonths = 2
-    @State private var selectionState: SelectionState = .none // Add selection state tracking
+    @State private var showingMonths = 12
+    @State private var selectionState: SelectionState = .none
+    @State private var scrollOffset: CGFloat = 0
     
     private let calendar = Calendar.current
     private let dateFormatter = DateFormatter()
@@ -37,17 +38,31 @@ struct CalendarView: View {
                         Image(systemName: "chevron.left")
                             .foregroundColor(.blue)
                             .font(.title2)
-                    }
+                    }.padding()
                     
                     Text("Select Date")
-                        .font(.title2)
+                        .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(Color("calendarColor"))
                         
                     
                     Spacer()
                 }
-                .padding()
+                .padding(.bottom,20)
+                
+                // Sticky weekday header
+                HStack(spacing: 0) {
+                    ForEach(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"], id: \.self) { day in
+                        Text(day)
+                            .font(.caption)
+                            .fontWeight(.regular)
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(Color("calendarColor"))
+                    }
+                }
+                .padding(.bottom, 30)
+                .background(Color.white)
+                .zIndex(1)
                 
                 ScrollView {
                     VStack(spacing: 20) {
@@ -103,18 +118,22 @@ struct CalendarView: View {
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
-                            )
-)
+                            ))
                             .cornerRadius(8)
                     }
                     .padding(.horizontal)
                     .padding(.bottom)
-                
                 }
                 .background(Color.white)
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: -5)
             }
-            .background(Color.white)
+            .background(LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(.white),
+                    Color(UIColor.systemGray6)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            ))
             .navigationBarHidden(true)
         }
     }
@@ -125,44 +144,36 @@ struct CalendarView: View {
         let yearOnly = date.formatted(.dateTime.year())
         let daysInMonth = calendar.range(of: .day, in: .month, for: monthStart)!.count
         let firstWeekday = calendar.component(.weekday, from: monthStart)
-        let adjustedFirstWeekday = (firstWeekday + 5) % 7 // Adjusting to make Monday = 0
+        let adjustedFirstWeekday = (firstWeekday + 5) % 7 // Adjusting to make Monday = 0, Sunday = 6
         
-        return VStack(alignment: .leading, spacing: 20) {
+        return VStack(alignment: .trailing, spacing: 20) {
             HStack(alignment: .firstTextBaseline) {
                 Text(monthOnly)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(Color("calendarColor"))
                 Text(yearOnly)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundColor(Color("calendarColor"))
+                    .fontWeight(.bold)
             }
             .padding(.horizontal)
-            
-            // Weekday headers
-            HStack(spacing: 0) {
-                ForEach(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"], id: \.self) { day in
-                    Text(day)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .frame(maxWidth: .infinity)
-                        .foregroundColor(Color("calendarColor"))
-                }
-            }
             
             // Days grid
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                 // Empty cells for days before the first of month
-                ForEach(0..<adjustedFirstWeekday, id: \.self) { _ in
+                ForEach(0..<adjustedFirstWeekday, id: \.self) { index in
                     Color.clear
                         .aspectRatio(1, contentMode: .fit)
+                        .id("empty-\(date)-\(index)")
                 }
                 
                 // Days of the month
                 ForEach(1...daysInMonth, id: \.self) { day in
-                    let currentDate = calendar.date(byAdding: .day, value: day - 1, to: monthStart)!
+                    let currentDate = calendar.date(from: DateComponents(year: calendar.component(.year, from: monthStart), month: calendar.component(.month, from: monthStart), day: day))!
                     dayCell(for: currentDate)
                         .aspectRatio(1, contentMode: .fit)
+                        .id("day-\(date)-\(day)")
                 }
             }
         }
@@ -171,16 +182,37 @@ struct CalendarView: View {
     private func dayCell(for date: Date) -> some View {
         let day = calendar.component(.day, from: date)
         let isSelected = isDateSelected(date)
+        let isEndpoint = isDateEndpoint(date)
+        let isInRange = isDateInRange(date)
         let isPastDate = calendar.compare(date, to: Date(), toGranularity: .day) == .orderedAscending
         
         return Text("\(day)")
-            .font(.body)
-            .fontWeight(isSelected ? .bold : .regular)
+            .font(.caption)
+            
+           
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                isSelected ? RoundedRectangle(cornerRadius: 4).fill(Color.blue) : nil
+                Group {
+                    if isEndpoint {
+                        RoundedRectangle(cornerRadius: 4)
+                            
+                            .fill(Color("calendarHighlightTile"))
+                            .frame(width: 40,height: 40)
+                            
+                    } else if isInRange {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color("calendarSelectedTile"))
+                            .frame(width: 40,height: 40)
+                    } else {
+                        Color.clear
+                    }
+                }
             )
-            .foregroundColor(isSelected ? .white : (isPastDate ? .gray : .primary))
+            .foregroundColor(
+                isEndpoint ? .white :
+                (isInRange ? .primary :
+                 (isPastDate ? .gray : Color("numberColor")))
+            )
             .opacity(isPastDate ? 0.5 : 1.0)
             .contentShape(Rectangle()) // Make entire cell tappable
             .onTapGesture {
@@ -237,6 +269,28 @@ struct CalendarView: View {
         selectedDates.contains { calendar.isDate($0, inSameDayAs: date) }
     }
     
+    private func isDateEndpoint(_ date: Date) -> Bool {
+        guard selectedDates.count >= 2 else {
+            return isDateSelected(date)
+        }
+        
+        return calendar.isDate(date, inSameDayAs: selectedDates.first!) ||
+               calendar.isDate(date, inSameDayAs: selectedDates.last!)
+    }
+    
+    private func isDateInRange(_ date: Date) -> Bool {
+        guard selectedDates.count >= 2,
+              let firstDate = selectedDates.first,
+              let lastDate = selectedDates.last else {
+            return false
+        }
+        
+        return calendar.compare(date, to: firstDate, toGranularity: .day) != .orderedAscending &&
+               calendar.compare(date, to: lastDate, toGranularity: .day) != .orderedDescending &&
+               !calendar.isDate(date, inSameDayAs: firstDate) &&
+               !calendar.isDate(date, inSameDayAs: lastDate)
+    }
+    
     private func formattedDate(_ date: Date?) -> String {
         guard let date = date else { return "MMM DD, YYYY" }
         
@@ -245,8 +299,6 @@ struct CalendarView: View {
         return formatter.string(from: date)
     }
 }
-
-
 
 struct CalendarView_Previews: PreviewProvider {
     static var previews: some View {
