@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DB98FCC32DCCC53B00A031EF /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = DB98FCC22DCCC53B00A031EF /* Alamofire */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		DB1DF21A2DCB5C3E00CBA557 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -23,15 +27,41 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		DB98FCC72DCCC54100A031EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		DB1DF20C2DCB5C3C00CBA557 /* test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = test.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DB1DF2192DCB5C3E00CBA557 /* testTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DB1DF2232DCB5C3E00CBA557 /* testUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DB98FCBF2DCCB88A00A031EF /* Exceptions for "test" folder in "test" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = DB1DF20B2DCB5C3C00CBA557 /* test */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DB1DF20E2DCB5C3C00CBA557 /* test */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				DB98FCBF2DCCB88A00A031EF /* Exceptions for "test" folder in "test" target */,
+			);
 			path = test;
 			sourceTree = "<group>";
 		};
@@ -52,6 +82,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DB98FCC32DCCC53B00A031EF /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +109,7 @@
 				DB1DF20E2DCB5C3C00CBA557 /* test */,
 				DB1DF21C2DCB5C3E00CBA557 /* testTests */,
 				DB1DF2262DCB5C3E00CBA557 /* testUITests */,
+				DB98FCC12DCCC53A00A031EF /* Frameworks */,
 				DB1DF20D2DCB5C3C00CBA557 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -92,6 +124,13 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		DB98FCC12DCCC53A00A031EF /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -102,6 +141,7 @@
 				DB1DF2082DCB5C3C00CBA557 /* Sources */,
 				DB1DF2092DCB5C3C00CBA557 /* Frameworks */,
 				DB1DF20A2DCB5C3C00CBA557 /* Resources */,
+				DB98FCC72DCCC54100A031EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -112,6 +152,7 @@
 			);
 			name = test;
 			packageProductDependencies = (
+				DB98FCC22DCCC53B00A031EF /* Alamofire */,
 			);
 			productName = test;
 			productReference = DB1DF20C2DCB5C3C00CBA557 /* test.app */;
@@ -170,6 +211,9 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				KnownAssetTags = (
+					New,
+				);
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
@@ -195,6 +239,9 @@
 			);
 			mainGroup = DB1DF2032DCB5C3C00CBA557;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DB98FCC02DCCC38900A031EF /* XCRemoteSwiftPackageReference "Alamofire" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DB1DF20D2DCB5C3C00CBA557 /* Products */;
 			projectDirPath = "";
@@ -397,6 +444,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = test/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -424,6 +472,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = test/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -550,6 +599,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DB98FCC02DCCC38900A031EF /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.10.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DB98FCC22DCCC53B00A031EF /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DB98FCC02DCCC38900A031EF /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DB1DF2042DCB5C3C00CBA557 /* Project object */;
 }
