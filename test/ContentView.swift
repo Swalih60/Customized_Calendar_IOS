@@ -8,13 +8,20 @@ struct CalendarView: View {
     @State private var showingMonths = 12
     @State private var selectionState: SelectionState = .none
     @State private var scrollOffset: CGFloat = 0
+    @State private var timeSelection:Bool=true
+    
+    @State private var selectedTime1=Date()
+    @State private var showTimePicker1: Bool = false
+    @State private var selectedTime2=Date()
+    @State private var showTimePicker2: Bool = false
+
     
     private let calendar = Calendar.current
     private let dateFormatter = DateFormatter()
     private let weekdayFormatter = DateFormatter()
     private let monthYearFormatter = DateFormatter()
     
-    // Define selection states
+    // Different states of selection in calendar
     private enum SelectionState {
         case none
         case firstDateSelected
@@ -64,6 +71,7 @@ struct CalendarView: View {
                 .background(Color.white)
                 .zIndex(1)
                 
+                //Calendar main part
                 ScrollView {
                     VStack(spacing: 20) {
                         ForEach(0..<showingMonths, id: \.self) { monthOffset in
@@ -77,49 +85,17 @@ struct CalendarView: View {
                 // Footer with date selection and apply button
                 VStack(spacing: 0) {
                     HStack(spacing: 10) {
-                        VStack(alignment: .leading) {
-                            Text("Departure")
-                                .foregroundColor(.gray)
-                                .font(.caption)
-                            Text(formattedDate(selectedDates.first))
-                                .font(.headline)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(UIColor.systemGray6))
-                        .cornerRadius(8)
+                        //Component defined at the bottom
+                       DateAndTime(showTimePicker: $showTimePicker1, selectedTime: $selectedTime1, timeSelection: $timeSelection, selectedDates: $selectedDates, label: "Departure")
                         
-                        VStack(alignment: .leading) {
-                            Text("Return")
-                                .foregroundColor(.gray)
-                                .font(.caption)
-                            Text(selectedDates.count > 1 ? formattedDate(selectedDates.last) : "MMM DD, YYYY")
-                                .font(.headline)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(UIColor.systemGray6))
-                        .cornerRadius(8)
+                        DateAndTime(showTimePicker: $showTimePicker2, selectedTime: $selectedTime2, timeSelection: $timeSelection, selectedDates: $selectedDates, label: "Return")
                     }
                     .padding()
                     
                     Button(action: {
                         // Apply action
                     }) {
-                        Text("Apply")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(red: 253/255, green: 104/255, blue: 14/255, opacity: 1.0),
-                                    Color(red: 218/255, green: 69/255, blue: 1/255, opacity: 1.0)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ))
-                            .cornerRadius(8)
+                        ApplyButton()
                     }
                     .padding(.horizontal)
                     .padding(.bottom)
@@ -138,6 +114,7 @@ struct CalendarView: View {
         }
     }
     
+    //Main part that is the Month title and the numbers this is repeated by passing values in the main code
     private func monthView(for date: Date) -> some View {
         let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: date))!
         let monthOnly = date.formatted(.dateTime.month(.wide))
@@ -179,9 +156,11 @@ struct CalendarView: View {
         }
     }
     
+    
+    //For each number in the calendar setting there background and there color
     private func dayCell(for date: Date) -> some View {
         let day = calendar.component(.day, from: date)
-        let isSelected = isDateSelected(date)
+       
         let isEndpoint = isDateEndpoint(date)
         let isInRange = isDateInRange(date)
         let isPastDate = calendar.compare(date, to: Date(), toGranularity: .day) == .orderedAscending
@@ -222,6 +201,7 @@ struct CalendarView: View {
             }
     }
     
+    //Handling the slection of dates
     private func handleDateSelection(_ date: Date) {
         switch selectionState {
         case .none:
@@ -248,6 +228,8 @@ struct CalendarView: View {
         }
     }
     
+    
+    //To create the range of date and pass it to the above code
     private func createDateRange(from startDate: Date, to endDate: Date) -> [Date] {
         var dates: [Date] = []
         var currentDate = startDate
@@ -291,12 +273,98 @@ struct CalendarView: View {
                !calendar.isDate(date, inSameDayAs: lastDate)
     }
     
-    private func formattedDate(_ date: Date?) -> String {
-        guard let date = date else { return "MMM DD, YYYY" }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: date)
+   
+}
+//To format Date
+private func formattedDate(_ date: Date?) -> String {
+    guard let date = date else { return "MMM DD, YYYY" }
+    
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMM d, yyyy"
+    return formatter.string(from: date)
+}
+
+//Function for formatting the time that is to be showed below the month
+private func formattedTime(_ date: Date) -> String {
+     let formatter = DateFormatter()
+     formatter.dateFormat = "h:mm a"
+     return formatter.string(from: date)
+ }
+
+//Component for Footer Date and time Tiles
+struct DateAndTime: View {
+    @Binding var showTimePicker:Bool
+    @Binding var selectedTime:Date
+    
+    @Binding var timeSelection:Bool
+    @Binding var selectedDates: [Date]
+    let label:String
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(label)
+                .foregroundColor(.gray)
+                .font(.caption)
+            label=="Departure" ? Text(formattedDate(selectedDates.first)).font(.headline) : Text(selectedDates.count > 1 ? formattedDate(selectedDates.last) : "MMM DD, YYYY")
+                .font(.headline)
+            if timeSelection {
+                // Where you have the time display
+                Text(formattedTime(selectedTime))
+                
+                    .font(.subheadline)
+                    
+                
+                // Then at the end of your body
+                    .sheet(isPresented:$showTimePicker) {
+                        VStack {
+                            DatePicker(
+                                "Select Time",
+                                selection:$selectedTime,
+                                displayedComponents: .hourAndMinute
+                            )
+                            .datePickerStyle(WheelDatePickerStyle())
+                            .labelsHidden()
+                            .padding()
+                            
+                            Button("Done") {
+                               
+                                    showTimePicker=false
+                                
+                            }
+                            .padding()
+                        }
+                        .presentationDetents([.height(250)])
+                    }
+            }
+        }
+        .onTapGesture {
+          
+                showTimePicker=true
+            
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color(UIColor.systemGray6))
+        .cornerRadius(8)
+    }
+}
+
+//Apply Button
+struct ApplyButton: View {
+    var body: some View {
+        Text("Apply")
+            .font(.headline)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 253/255, green: 104/255, blue: 14/255, opacity: 1.0),
+                    Color(red: 218/255, green: 69/255, blue: 1/255, opacity: 1.0)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ))
+            .cornerRadius(8)
     }
 }
 
@@ -305,3 +373,6 @@ struct CalendarView_Previews: PreviewProvider {
         CalendarView()
     }
 }
+
+
+
