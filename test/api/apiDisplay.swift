@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct apiDisplay: View {
-    @StateObject var viewModel = PriceViewModel()
+    @StateObject var viewModel = PriceModel()
 
     var body: some View {
         NavigationView {

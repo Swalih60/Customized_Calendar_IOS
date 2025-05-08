@@ -8,7 +8,7 @@ struct FlightSearchBody: Encodable {
     let round_trip: Bool
 }
 
-class PriceViewModel: ObservableObject {
+class PriceModel: ObservableObject {
     @Published var prices: [PriceResult] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
