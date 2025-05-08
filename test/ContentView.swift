@@ -1,129 +1,201 @@
 import SwiftUI
 
-struct CalendarView: View {
-    @State private var selectedDates: [Date] = []
-    @State private var isDragging = false
-    @State private var dragStartDate: Date?
-    @State private var currentMonth = Date()
-    @State private var showingMonths = 12
-    @State private var selectionState: SelectionState = .none
-    @State private var scrollOffset: CGFloat = 0
-    @State private var timeSelection:Bool=true
+// MARK: - Models
+struct DateSelection {
+    var selectedDates: [Date] = []
+    var selectionState: SelectionState = .none
     
-    @State private var selectedTime1=Date()
-    @State private var showTimePicker1: Bool = false
-    @State private var selectedTime2=Date()
-    @State private var showTimePicker2: Bool = false
-
-    
-    private let calendar = Calendar.current
-    private let dateFormatter = DateFormatter()
-    private let weekdayFormatter = DateFormatter()
-    private let monthYearFormatter = DateFormatter()
-    
-    // Different states of selection in calendar
-    private enum SelectionState {
+    enum SelectionState {
         case none
         case firstDateSelected
         case rangeSelected
     }
+}
+
+// MARK: - CalendarView
+struct CalendarView: View {
+    // MARK: - Properties
+    private let calendar = Calendar.current
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }()
+    private let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        return formatter
+    }()
+    private let monthYearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        return formatter
+    }()
     
-    init() {
-        dateFormatter.dateFormat = "d"
-        weekdayFormatter.dateFormat = "E"
-        monthYearFormatter.dateFormat = "MMM yyyy"
+    // MARK: - State
+    @State private var dateSelection = DateSelection()
+    @State private var currentMonth = Date()
+    @State private var showingMonths = 12
+    @State private var timeSelection: Bool = true
+    
+    @State private var departureTime = Date()
+    @State private var showDepartureTimePicker: Bool = false
+    @State private var returnTime = Date()
+    @State private var showReturnTimePicker: Bool = false
+    
+    // MARK: - Computed Properties
+    private var selectedDates: [Date] {
+        dateSelection.selectedDates
     }
     
+    // MARK: - Body
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // Header with back button
-                HStack {
-                    Button(action: {
-                        // Go back action
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.blue)
-                            .font(.title2)
-                    }.padding()
-                    
-                    Text("Select Date")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(Color("calendarColor"))
-                        
-                    
-                    Spacer()
-                }
-                .padding(.bottom,20)
+//                headerView
                 
                 // Sticky weekday header
-                HStack(spacing: 0) {
-                    ForEach(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"], id: \.self) { day in
-                        Text(day)
-                            .font(.caption)
-                            .fontWeight(.regular)
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(Color("calendarColor"))
-                    }
-                }
-                .padding(.bottom, 30)
-                .background(Color.white)
-                .zIndex(1)
+                weekdayHeaderView
                 
-                //Calendar main part
-                ScrollView {
-                    VStack(spacing: 20) {
-                        ForEach(0..<showingMonths, id: \.self) { monthOffset in
-                            let date = calendar.date(byAdding: .month, value: monthOffset, to: currentMonth)!
-                            monthView(for: date)
-                        }
-                    }
-                    .padding(.bottom, 100)
-                }
+                // Calendar main part
+                calendarScrollView
                 
                 // Footer with date selection and apply button
-                VStack(spacing: 0) {
-                    HStack(spacing: 10) {
-                        //Component defined at the bottom
-                       DateAndTime(showTimePicker: $showTimePicker1, selectedTime: $selectedTime1, timeSelection: $timeSelection, selectedDates: $selectedDates, label: "Departure")
-                        
-                        DateAndTime(showTimePicker: $showTimePicker2, selectedTime: $selectedTime2, timeSelection: $timeSelection, selectedDates: $selectedDates, label: "Return")
-                    }
-                    .padding()
-                    
-                    Button(action: {
-                        // Apply action
-                    }) {
-                        ApplyButton()
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                }
-                .background(Color.white)
+                footerView
             }
-            .background(LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(.white),
-                    Color(UIColor.systemGray6)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            ))
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(.white),
+                        Color(UIColor.systemGray6)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .navigationBarHidden(true)
         }
     }
     
-    //Main part that is the Month title and the numbers this is repeated by passing values in the main code
-    private func monthView(for date: Date) -> some View {
-        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: date))!
-        let monthOnly = date.formatted(.dateTime.month(.wide))
-        let yearOnly = date.formatted(.dateTime.year())
-        let daysInMonth = calendar.range(of: .day, in: .month, for: monthStart)!.count
-        let firstWeekday = calendar.component(.weekday, from: monthStart)
-        let adjustedFirstWeekday = (firstWeekday + 5) % 7 // Adjusting to make Monday = 0, Sunday = 6
+    // MARK: - View Components
+//    private var headerView: some View {
+//        HStack {
+//            Button(action: {
+//                // Go back action
+//            }) {
+//                Image(systemName: "chevron.left")
+//                    .foregroundColor(.blue)
+//                    .font(.title2)
+//            }
+//            .padding()
+//            
+//            Text("Select Date")
+//                .font(.title3)
+//                .fontWeight(.bold)
+//                .foregroundColor(Color("calendarColor"))
+//            
+//            Spacer()
+//        }
+//        .padding(.bottom, 20)
+//    }
+    
+    private var weekdayHeaderView: some View {
+        HStack(spacing: 0) {
+            ForEach(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"], id: \.self) { day in
+                Text(day)
+                    .font(.caption)
+                    .fontWeight(.regular)
+                    .frame(maxWidth: .infinity)
+                    .foregroundColor(Color("calendarColor"))
+            }
+        }
+        .padding(.bottom, 30)
+        .background(Color.white)
+        .zIndex(1)
+    }
+    
+    private var calendarScrollView: some View {
+        ScrollView {
+            LazyVStack(spacing: 20) {
+                ForEach(0..<showingMonths, id: \.self) { monthOffset in
+                    if let date = calendar.date(byAdding: .month, value: monthOffset, to: currentMonth) {
+                        MonthView(
+                            month: date,
+                            dateSelection: $dateSelection,
+                            calendar: calendar
+                        )
+                    }
+                }
+            }
+            .padding(.bottom, 100)
+        }
+    }
+    
+    private var footerView: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                DateAndTime(
+                    showTimePicker: $showDepartureTimePicker,
+                    selectedTime: $departureTime,
+                    timeSelection: $timeSelection,
+                    selectedDates: dateSelection.selectedDates,
+                    isFirst: true,
+                    label: "Departure"
+                )
+                
+                DateAndTime(
+                    showTimePicker: $showReturnTimePicker,
+                    selectedTime: $returnTime,
+                    timeSelection: $timeSelection,
+                    selectedDates: dateSelection.selectedDates,
+                    isFirst: false,
+                    label: "Return"
+                )
+            }
+            .padding()
+            
+            Button(action: {
+                // Apply action
+            }) {
+                ApplyButton()
+            }
+            .padding(.horizontal)
+            .padding(.bottom)
+        }
+        .background(Color.white)
+    }
+}
+
+// MARK: - MonthView
+struct MonthView: View {
+    let month: Date
+    @Binding var dateSelection: DateSelection
+    let calendar: Calendar
+    
+    // Cache computed values
+    private let monthStart: Date
+    private let monthOnly: String
+    private let yearOnly: String
+    private let daysInMonth: Int
+    private let adjustedFirstWeekday: Int
+    
+    init(month: Date, dateSelection: Binding<DateSelection>, calendar: Calendar) {
+        self.month = month
+        self._dateSelection = dateSelection
+        self.calendar = calendar
         
-        return VStack(alignment: .trailing, spacing: 20) {
+        // Pre-compute values
+        self.monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: month))!
+        self.monthOnly = month.formatted(.dateTime.month(.wide))
+        self.yearOnly = month.formatted(.dateTime.year())
+        self.daysInMonth = calendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
+        let firstWeekday = calendar.component(.weekday, from: monthStart)
+        self.adjustedFirstWeekday = (firstWeekday + 5) % 7 // Adjusting to make Monday = 0, Sunday = 6
+    }
+    
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 20) {
             HStack(alignment: .firstTextBaseline) {
                 Text(monthOnly)
                     .font(.title2)
@@ -139,97 +211,65 @@ struct CalendarView: View {
             // Days grid
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                 // Empty cells for days before the first of month
-                ForEach(0..<adjustedFirstWeekday, id: \.self) { index in
+                ForEach(0..<adjustedFirstWeekday, id: \.self) { _ in
                     Color.clear
                         .aspectRatio(1, contentMode: .fit)
-                        .id("empty-\(date)-\(index)")
                 }
                 
                 // Days of the month
                 ForEach(1...daysInMonth, id: \.self) { day in
-                    let currentDate = calendar.date(from: DateComponents(year: calendar.component(.year, from: monthStart), month: calendar.component(.month, from: monthStart), day: day))!
-                    dayCell(for: currentDate)
+                    if let currentDate = calendar.date(from: DateComponents(
+                        year: calendar.component(.year, from: monthStart),
+                        month: calendar.component(.month, from: monthStart),
+                        day: day
+                    )) {
+                        DayCell(
+                            date: currentDate,
+                            selectedDates: dateSelection.selectedDates,
+                            calendar: calendar
+                        )
                         .aspectRatio(1, contentMode: .fit)
-                        .id("day-\(date)-\(day)")
+                        .onTapGesture {
+                            if !isPastDate(currentDate) {
+                                handleDateSelection(currentDate)
+                            }
+                        }
+                    }
                 }
             }
         }
     }
     
-    
-    //For each number in the calendar setting there background and there color
-    private func dayCell(for date: Date) -> some View {
-        let day = calendar.component(.day, from: date)
-       
-        let isEndpoint = isDateEndpoint(date)
-        let isInRange = isDateInRange(date)
-        let isPastDate = calendar.compare(date, to: Date(), toGranularity: .day) == .orderedAscending
-        
-        return Text("\(day)")
-            .font(.caption)
-            
-           
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                Group {
-                    if isEndpoint {
-                        RoundedRectangle(cornerRadius: 4)
-                            
-                            .fill(Color("calendarHighlightTile"))
-                            .frame(width: 40,height: 40)
-                            
-                    } else if isInRange {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color("calendarSelectedTile"))
-                            .frame(width: 40,height: 40)
-                    } else {
-                        Color.clear
-                    }
-                }
-            )
-            .foregroundColor(
-                isEndpoint ? .white :
-                (isInRange ? .primary :
-                 (isPastDate ? .gray : Color("numberColor")))
-            )
-            .opacity(isPastDate ? 0.5 : 1.0)
-            .contentShape(Rectangle()) // Make entire cell tappable
-            .onTapGesture {
-                if !isPastDate {
-                    handleDateSelection(date)
-                }
-            }
+    private func isPastDate(_ date: Date) -> Bool {
+        calendar.compare(date, to: Date(), toGranularity: .day) == .orderedAscending
     }
     
-    //Handling the slection of dates
     private func handleDateSelection(_ date: Date) {
-        switch selectionState {
+        switch dateSelection.selectionState {
         case .none:
             // First date selected
-            selectedDates = [date]
-            selectionState = .firstDateSelected
+            dateSelection.selectedDates = [date]
+            dateSelection.selectionState = .firstDateSelected
             
         case .firstDateSelected:
             // Second date selected, create range
-            if calendar.isDate(date, inSameDayAs: selectedDates[0]) {
+            if calendar.isDate(date, inSameDayAs: dateSelection.selectedDates[0]) {
                 // If tapping the same date again, just keep it selected
                 return
             }
             
-            let startDate = min(date, selectedDates[0])
-            let endDate = max(date, selectedDates[0])
-            selectedDates = createDateRange(from: startDate, to: endDate)
-            selectionState = .rangeSelected
+            let startDate = min(date, dateSelection.selectedDates[0])
+            let endDate = max(date, dateSelection.selectedDates[0])
+            dateSelection.selectedDates = createDateRange(from: startDate, to: endDate)
+            dateSelection.selectionState = .rangeSelected
             
         case .rangeSelected:
             // Clear previous selection, start fresh
-            selectedDates = [date]
-            selectionState = .firstDateSelected
+            dateSelection.selectedDates = [date]
+            dateSelection.selectionState = .firstDateSelected
         }
     }
     
-    
-    //To create the range of date and pass it to the above code
     private func createDateRange(from startDate: Date, to endDate: Date) -> [Date] {
         var dates: [Date] = []
         var currentDate = startDate
@@ -245,6 +285,57 @@ struct CalendarView: View {
         }
         
         return dates
+    }
+}
+
+// MARK: - DayCell
+struct DayCell: View {
+    let date: Date
+    let selectedDates: [Date]
+    let calendar: Calendar
+    
+    private var day: Int {
+        calendar.component(.day, from: date)
+    }
+    
+    private var isEndpoint: Bool {
+        isDateEndpoint(date)
+    }
+    
+    private var isInRange: Bool {
+        isDateInRange(date)
+    }
+    
+    private var isPastDate: Bool {
+        calendar.compare(date, to: Date(), toGranularity: .day) == .orderedAscending
+    }
+    
+    var body: some View {
+        Text("\(day)")
+            .font(.caption)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(
+                Group {
+                    if isEndpoint {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color("calendarHighlightTile"))
+                            .frame(width: 40, height: 40)
+                    } else if isInRange {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color("calendarSelectedTile"))
+                            .frame(width: 40, height: 40)
+                    } else {
+                        Color.clear
+                    }
+                }
+            )
+            .foregroundColor(
+                isEndpoint ? .white :
+                    (isInRange ? .primary :
+                        (isPastDate ? .gray : Color("numberColor")))
+            )
+            .opacity(isPastDate ? 0.5 : 1.0)
+            .contentShape(Rectangle()) // Make entire cell tappable
     }
     
     private func isDateSelected(_ date: Date) -> Bool {
@@ -272,11 +363,10 @@ struct CalendarView: View {
                !calendar.isDate(date, inSameDayAs: firstDate) &&
                !calendar.isDate(date, inSameDayAs: lastDate)
     }
-    
-   
 }
-//To format Date
-private func formattedDate(_ date: Date?) -> String {
+
+// MARK: - Helper Functions
+func formattedDate(_ date: Date?) -> String {
     guard let date = date else { return "MMM DD, YYYY" }
     
     let formatter = DateFormatter()
@@ -284,71 +374,79 @@ private func formattedDate(_ date: Date?) -> String {
     return formatter.string(from: date)
 }
 
-//Function for formatting the time that is to be showed below the month
-private func formattedTime(_ date: Date) -> String {
-     let formatter = DateFormatter()
-     formatter.dateFormat = "h:mm a"
-     return formatter.string(from: date)
- }
+func formattedTime(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "h:mm a"
+    return formatter.string(from: date)
+}
 
-//Component for Footer Date and time Tiles
+// MARK: - DateAndTime it is a component used in the footer which has the date and time
 struct DateAndTime: View {
-    @Binding var showTimePicker:Bool
-    @Binding var selectedTime:Date
+    @Binding var showTimePicker: Bool
+    @Binding var selectedTime: Date
+    @Binding var timeSelection: Bool
+    let selectedDates: [Date]
+    let isFirst: Bool
+    let label: String
     
-    @Binding var timeSelection:Bool
-    @Binding var selectedDates: [Date]
-    let label:String
     var body: some View {
         VStack(alignment: .leading) {
             Text(label)
                 .foregroundColor(.gray)
                 .font(.caption)
-            label=="Departure" ? Text(formattedDate(selectedDates.first)).font(.headline) : Text(selectedDates.count > 1 ? formattedDate(selectedDates.last) : "MMM DD, YYYY")
-                .font(.headline)
+            
+            if isFirst {
+                Text(formattedDate(selectedDates.first))
+                    .font(.headline)
+            } else {
+                Text(selectedDates.count > 1 ? formattedDate(selectedDates.last) : "MMM DD, YYYY")
+                    .font(.headline)
+            }
+            
             if timeSelection {
-                // Where you have the time display
                 Text(formattedTime(selectedTime))
-                
                     .font(.subheadline)
-                    
-                
-                // Then at the end of your body
-                    .sheet(isPresented:$showTimePicker) {
-                        VStack {
-                            DatePicker(
-                                "Select Time",
-                                selection:$selectedTime,
-                                displayedComponents: .hourAndMinute
-                            )
-                            .datePickerStyle(WheelDatePickerStyle())
-                            .labelsHidden()
-                            .padding()
-                            
-                            Button("Done") {
-                               
-                                    showTimePicker=false
-                                
-                            }
-                            .padding()
-                        }
-                        .presentationDetents([.height(250)])
-                    }
             }
         }
         .onTapGesture {
-          
-                showTimePicker=true
-            
+            showTimePicker = true
         }
         .frame(maxWidth: .infinity)
         .padding()
         .background(Color(UIColor.systemGray6))
         .cornerRadius(8)
+        .sheet(isPresented: $showTimePicker) {
+            TimePickerView(selectedTime: $selectedTime, showTimePicker: $showTimePicker)
+        }
     }
 }
 
-//Apply Button
+// MARK: - TimePickerView component used in date and time
+struct TimePickerView: View {
+    @Binding var selectedTime: Date
+    @Binding var showTimePicker: Bool
+    
+    var body: some View {
+        VStack {
+            DatePicker(
+                "Select Time",
+                selection: $selectedTime,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(WheelDatePickerStyle())
+            .labelsHidden()
+            .padding()
+            
+            Button("Done") {
+                showTimePicker = false
+            }
+            .padding()
+        }
+        .presentationDetents([.height(250)])
+    }
+}
+
+// MARK: - ApplyButton
 struct ApplyButton: View {
     var body: some View {
         Text("Apply")
@@ -368,11 +466,9 @@ struct ApplyButton: View {
     }
 }
 
+// MARK: - Previews
 struct CalendarView_Previews: PreviewProvider {
     static var previews: some View {
         CalendarView()
     }
 }
-
-
-
