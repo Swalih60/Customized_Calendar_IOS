@@ -36,12 +36,16 @@ struct CalendarView: View {
     @State private var dateSelection = DateSelection()
     @State private var currentMonth = Date()
     @State private var showingMonths = 12
-    @State private var timeSelection: Bool = true
     
+    //turn this to false to remove time selection
+    @State private var timeSelection: Bool = true
     @State private var departureTime = Date()
     @State private var showDepartureTimePicker: Bool = false
     @State private var returnTime = Date()
     @State private var showReturnTimePicker: Bool = false
+    
+    //turn this to false for single Date
+    @State private var singleDate:Bool = true
     
     // MARK: - Computed Properties
     private var selectedDates: [Date] {
@@ -123,7 +127,9 @@ struct CalendarView: View {
                         MonthView(
                             month: date,
                             dateSelection: $dateSelection,
-                            calendar: calendar
+                            calendar: calendar,
+                            singleDateMode: !singleDate
+                            
                         )
                     }
                 }
@@ -144,7 +150,7 @@ struct CalendarView: View {
                     label: "Departure"
                 )
                 
-                DateAndTime(
+                if singleDate{  DateAndTime(
                     showTimePicker: $showReturnTimePicker,
                     selectedTime: $returnTime,
                     timeSelection: $timeSelection,
@@ -152,6 +158,7 @@ struct CalendarView: View {
                     isFirst: false,
                     label: "Return"
                 )
+                }
             }
             .padding()
             
@@ -172,6 +179,7 @@ struct MonthView: View {
     let month: Date
     @Binding var dateSelection: DateSelection
     let calendar: Calendar
+    let singleDateMode: Bool
     
     // Cache computed values
     private let monthStart: Date
@@ -180,7 +188,7 @@ struct MonthView: View {
     private let daysInMonth: Int
     private let adjustedFirstWeekday: Int
     
-    init(month: Date, dateSelection: Binding<DateSelection>, calendar: Calendar) {
+    init(month: Date, dateSelection: Binding<DateSelection>, calendar: Calendar, singleDateMode: Bool = false) {
         self.month = month
         self._dateSelection = dateSelection
         self.calendar = calendar
@@ -192,6 +200,7 @@ struct MonthView: View {
         self.daysInMonth = calendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
         let firstWeekday = calendar.component(.weekday, from: monthStart)
         self.adjustedFirstWeekday = (firstWeekday + 5) % 7 // Adjusting to make Monday = 0, Sunday = 6
+        self.singleDateMode = singleDateMode
     }
     
     var body: some View {
@@ -245,28 +254,35 @@ struct MonthView: View {
     }
     
     private func handleDateSelection(_ date: Date) {
-        switch dateSelection.selectionState {
-        case .none:
-            // First date selected
-            dateSelection.selectedDates = [date]
-            dateSelection.selectionState = .firstDateSelected
-            
-        case .firstDateSelected:
-            // Second date selected, create range
-            if calendar.isDate(date, inSameDayAs: dateSelection.selectedDates[0]) {
-                // If tapping the same date again, just keep it selected
-                return
+        if singleDateMode {
+                // Single date mode - always just select one date
+                dateSelection.selectedDates = [date]
+                dateSelection.selectionState = .firstDateSelected
             }
-            
-            let startDate = min(date, dateSelection.selectedDates[0])
-            let endDate = max(date, dateSelection.selectedDates[0])
-            dateSelection.selectedDates = createDateRange(from: startDate, to: endDate)
-            dateSelection.selectionState = .rangeSelected
-            
-        case .rangeSelected:
-            // Clear previous selection, start fresh
-            dateSelection.selectedDates = [date]
-            dateSelection.selectionState = .firstDateSelected
+        else{
+            switch dateSelection.selectionState {
+            case .none:
+                // First date selected
+                dateSelection.selectedDates = [date]
+                dateSelection.selectionState = .firstDateSelected
+                
+            case .firstDateSelected:
+                // Second date selected, create range
+                if calendar.isDate(date, inSameDayAs: dateSelection.selectedDates[0]) {
+                    // If tapping the same date again, just keep it selected
+                    return
+                }
+                
+                let startDate = min(date, dateSelection.selectedDates[0])
+                let endDate = max(date, dateSelection.selectedDates[0])
+                dateSelection.selectedDates = createDateRange(from: startDate, to: endDate)
+                dateSelection.selectionState = .rangeSelected
+                
+            case .rangeSelected:
+                // Clear previous selection, start fresh
+                dateSelection.selectedDates = [date]
+                dateSelection.selectionState = .firstDateSelected
+            }
         }
     }
     
